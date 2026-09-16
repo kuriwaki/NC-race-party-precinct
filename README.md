@@ -18,7 +18,8 @@ No supplied voter files, Census downloads, or API key are needed to run it.
 The example verifies [its own manifest](manifests/example-tyrrell.yml), then runs
 the same spatial matching and combination functions as stages 03 and 04.
 It writes the wide-table CSV and precinct geometry (RDS/GeoJSON) under
-`release/tyrrell/`. It starts from frozen aggregate counts and block-group
+`release/tyrrell/`. These three small outputs are also tracked for inspection
+without running R; other release datasets remain ignored. It starts from frozen aggregate counts and block-group
 covariates; use the full pipeline below to rebuild those inputs.
 
 For a full run, start with [data/raw/README.md](data/raw/README.md) to place supplied files.
@@ -178,7 +179,7 @@ network access. `testthat` reports object differences using
 not replace validation of a full Census-backed build.
 
 Public PRs should contain code, documentation, small reference mappings,
-manifests, and the three explicitly allowed Tyrrell example inputs. Raw data
-and generated datasets remain local. `.gitignore` prevents
+manifests, and the three explicitly allowed Tyrrell example inputs and three
+release outputs. Raw data and other generated datasets remain local. `.gitignore` prevents
 ordinary accidental additions; it cannot stop `git add -f` or untrack files that
 were previously committed. See the planned PR check in [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -1,12 +1,18 @@
 # Release
 
 [Stage 04](../prepare/04_nc-wide_combine.R) writes the published datasets here.
-Data files are ignored by Git; only this README is tracked. No pre-existing
+Full-size data files are ignored by Git. This README and the three Tyrrell
+example outputs listed below are tracked. No pre-existing
 release files need to be supplied to reproduce the build.
 
 The offline [Tyrrell example](../examples/tyrrell/README.md) writes the same
 wide-table CSV and geometry RDS/GeoJSON under `tyrrell/` here.
-Those generated files are also ignored; the small example inputs live under
+These three generated files are explicit Git exceptions:
+[wide CSV](tyrrell/nc_vtd_wide.csv), [geometry RDS](tyrrell/nc_vtd_geo.rds), and
+[geometry GeoJSON](tyrrell/nc_vtd_geo.geojson), totaling 12,334 bytes (12 KiB).
+Other release paths and additional files inside `tyrrell/` remain ignored.
+Rerunning the example updates these tracked outputs; review their diffs before
+committing. The small example inputs live under
 `examples/tyrrell/inputs/` and have [their own manifest](../manifests/example-tyrrell.yml).
 
 | File | Contents and role |

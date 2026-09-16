@@ -7,7 +7,8 @@ The full build and equivalence to the legacy outputs remain to be validated.
 ## Keep data local
 
 Put source data under `data/raw/`, intermediates under `data/intermediate/`,
-and deliverables under `release/`. Only their READMEs are tracked. Follow
+and deliverables under `release/`. Their READMEs and the three small
+[Tyrrell release files](release/README.md) are tracked. Follow
 [data/raw/README.md](data/raw/README.md) for the exact input placement and
 [config/pipeline.yml](config/pipeline.yml) for paths and build order. Never
 force-add L2 records, NC voter records, shapefiles, extracts, or Census caches.
@@ -31,8 +32,9 @@ another contributor's behalf.
 Planned CI will reject tracked data directories, prohibited raw/binary formats,
 and unexpectedly large files (initial proposal: 1 MiB per tracked file, with
 explicit reviewed exceptions). It will check the full tracked inventory,
-including files added with `git add -f`, and allow the three exact paths in
-[manifests/example-tyrrell.yml](manifests/example-tyrrell.yml). This guard is not implemented yet.
+including files added with `git add -f`, and allow the three exact input paths in
+[manifests/example-tyrrell.yml](manifests/example-tyrrell.yml) and the three exact
+Tyrrell release paths in [.gitignore](.gitignore). This guard is not implemented yet.
 
 ## Code and source updates
 

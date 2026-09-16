@@ -120,7 +120,7 @@ tests/test-pipeline.R               # focused testthat checks, no supplied data
 renv.lock                          # create once dependencies are settled
 data/raw/                          # ignored, immutable acquired inputs
 data/intermediate/                 # ignored, rebuildable stage outputs
-release/                           # ignored: rds and geojson deliverables
+release/                           # ignored, except the three small Tyrrell outputs
 data/diagnostics/                   # ignored, join and count summaries
 cache/, logs/                      # ignored
 ```
@@ -216,7 +216,8 @@ cardinality alone does not detect missing keys.
 The published products are (1) a wide-table CSV and geometry RDS, (2) a GeoJSON of the precinct
 geometry with identifiers, (3) a Quarto codebook, and SHA-256 hashes of the
 input and output data files. Data files go under `release/` and remain
-gitignored. `codebook.qmd` and the YAML manifests are tracked.
+gitignored, except for the three small example outputs under `release/tyrrell/`.
+`codebook.qmd` and the YAML manifests are tracked.
 
 ### Wide CSV and geometry RDS
 

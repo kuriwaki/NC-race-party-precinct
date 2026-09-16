@@ -47,7 +47,8 @@ weight. These are properties of the real example, not errors to fill with zeros.
 
 ## Included files and columns
 
-Only the three exact paths below are exceptions in [.gitignore](../../.gitignore).
+The three exact input paths below are exceptions in [.gitignore](../../.gitignore),
+along with the three generated outputs listed under Results and memory.
 Their descriptions, roles, byte counts, and SHA-256 hashes are in the
 [example manifest](../../manifests/example-tyrrell.yml). There is one file per
 input type; geometry is stored as GeoJSON instead of a multi-file shapefile.
@@ -75,11 +76,15 @@ vertices can differ from a subset of a statewide simplification.
 
 ## Results and memory
 
-Results go to [release/tyrrell/](../../release/README.md), which remains ignored:
+Results go to [release/tyrrell/](../../release/README.md). These three files are
+tracked so a fresh clone includes the finished example as well as its inputs:
 
 - `nc_vtd_wide.csv`: six rows and the full 40-column final schema.
 - `nc_vtd_geo.rds` and `nc_vtd_geo.geojson`: six simplified precinct geometries,
   with only `vtd`, `county_nam`, and `fips` attributes.
+
+Rerunning the example updates these files; review the resulting Git diff before
+committing. All other release files remain ignored.
 
 The CSV writes missing covariates as blank fields and zero counts as `0`.
 See the [release README](../../release/README.md) for importing blanks as `NA`

@@ -4,7 +4,7 @@
 .Ruserdata
 
 # Local inputs, caches, intermediate data, and generated outputs.
-# Track only README placeholders inside the data and release directories.
+# Track README placeholders and the explicitly allowed Tyrrell release below.
 /data/*
 !/data/raw/
 !/data/intermediate/
@@ -76,6 +76,13 @@
 !/examples/tyrrell/inputs/voter-counts.csv
 !/examples/tyrrell/inputs/block-groups.geojson
 !/examples/tyrrell/inputs/precincts.geojson
+
+# Reviewed Tyrrell release: keep every other release file ignored.
+!/release/tyrrell/
+/release/tyrrell/*
+!/release/tyrrell/nc_vtd_wide.csv
+!/release/tyrrell/nc_vtd_geo.rds
+!/release/tyrrell/nc_vtd_geo.geojson
 
 # Credentials and machine-specific configuration.
 .Renviron

@@ -7,7 +7,8 @@ format: html
 
 # Published Files ----
 
-The pipeline writes three ignored deliverables under `release/`:
+The pipeline writes three deliverables under `release/`. Statewide outputs are
+ignored by Git; the three small example outputs under `release/tyrrell/` are tracked:
 
 - `nc_vtd_wide.csv`: one row per voter-file precinct key.
 - `nc_vtd_geo.rds`: simplified SBE precinct geometry in the reference State Plane CRS.
