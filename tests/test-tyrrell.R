@@ -9,8 +9,24 @@ source("../R/nc-reference.R")
 source("../R/nc-precinct-recodes.R")
 source("../R/nc-geomatch.R")
 source("../R/nc-combine.R")
-require_packages(c("checkmate", "digest", "dplyr", "geomander", "sf", "tibble", "tidyr"))
+require_packages(c("checkmate", "digest", "dplyr", "geomander", "sf", "stringr", "tibble", "tidyr"))
 testthat::local_edition(3)
+
+testthat::test_that("SBE keys preserve source IDs when joining geometry edits", {
+  rows <- tibble::tibble(
+    county_nam = c("HAYWOOD", "GASTON", "WAKE", "TYRRELL"),
+    enr_desc = c("BEAVERDAM 1", "FOREST HEIGHTS", "UNLISTED", "ALLIGATOR"),
+    prec_id = c("BE-1", "04-1", "01-01", "1"),
+    of_prec_id = NA_character_, Shape_Leng = 1,
+    x = 1:4, y = 1:4
+  )
+  source_geo <- sf::st_as_sf(rows, coords = c("x", "y"), crs = 2264)
+  result <- prepare_precinct_geometry(source_geo)
+  testthat::expect_identical(result$prec_id, c("BE1", "04", "01", "1"))
+  testthat::expect_identical(result$vtd, c("37087BE1", "3707104", "3718301", "371771"))
+  testthat::expect_identical(sf::st_geometry(result), sf::st_geometry(source_geo))
+  testthat::expect_false(any(c("prec_id.x", "prec_id.y", "prec_id_recode", "prec_id_wake") %in% names(result)))
+})
 
 testthat::test_that("Tyrrell retains all six precincts and the reviewed spatial assignments", {
   verify_inputs("../manifests/example-tyrrell.yml", "../examples/tyrrell")

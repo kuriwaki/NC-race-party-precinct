@@ -38,12 +38,12 @@ education <- get_acs("B15003") |>
   dplyr::filter(.data$educ != "total") |>
   dplyr::mutate(
     estimate = easycensus::get_est(.data$estimate),
-    educ = dplyr::case_match(
+    educ = dplyr::recode_values(
       as.character(.data$educ),
       c("doctorate degree", "professional school degree", "master's degree") ~ "edu_prof",
       "bachelor's degree" ~ "edu_coll",
       c("some college, less than 1 year", "some college, 1 or more years, no degree", "associate's degree") ~ "edu_somecoll",
-      .default = "edu_hsless"
+      default = "edu_hsless"
     )
   ) |>
   dplyr::summarize(est = sum(.data$estimate), .by = c("GEOID", "educ")) |>

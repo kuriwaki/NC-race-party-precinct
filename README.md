@@ -122,7 +122,8 @@ source("run.R")
 Or use `Rscript run.R` from a shell in the repository root. Shared dependencies
 (`cli`, `fs`, `glue`, `purrr`, `readr`, `scales`, and `yaml`) are checked by
 [R/nc-utils.R](R/nc-utils.R); each stage lists its additional packages near the
-top. Manifest validation uses `checkmate`, ACS retrieval uses `easycensus`, and
+top. Stage 02 requires `dplyr` 1.2.0 or newer for `recode_values()`.
+Manifest validation uses `checkmate`, ACS retrieval uses `easycensus`, and
 spatial matching uses `geomander`. [config/pipeline.yml](config/pipeline.yml)
 controls input roots, Census years, build order, and destination paths.
 
