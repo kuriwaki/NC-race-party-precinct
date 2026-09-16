@@ -78,12 +78,17 @@ that ambiguity.
 
 # Source Vintages ----
 
-- NC voter file: snapshot labeled `2025-08-02`, locked locally by SHA-256 before use.
+- NC voter file: retained formatted snapshot labeled `2025-08-02`; one directory SHA-256 covers all 100 county Parquet partitions.
 - SBE precinct maps: `SBE_PRECINCTS_20250225`, locked by complete shapefile components.
 - ACS: 2023 estimates retrieved through `easycensus`.
 - TIGER block groups: 2024 full geometry for area and matching; 2024 cartographic geometry for distances.
 - Cities: `ggredist::cities`, 2020 population greater than 100,000 in NC, SC, TN, VA, and GA.
-- R1 universities: reviewed local point table under `data/raw/r1_universities`.
+- R1 universities: the original 147-point table in EPSG:4269, locked by SHA-256 under `data/raw/r1_universities`.
+
+See [data/raw/README.md](data/raw/README.md) for supplied-file placement and
+[manifests/inputs.yml](manifests/inputs.yml) for dataset roles, source limitations,
+and hashes. ACS/TIGER inputs are retrieved by code; their response bytes and
+package dependency versions are not currently locked.
 
 # Build Checks ----
 

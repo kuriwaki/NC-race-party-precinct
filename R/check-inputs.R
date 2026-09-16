@@ -37,6 +37,9 @@ verify_inputs <- function(manifest_path, raw_dir = project_path("data", "raw")) 
 
   files_raw <- purrr::map(manifest_raw$files, tibble::as_tibble) |>
     purrr::list_rbind()
+  directories_raw <- purrr::map(manifest_raw$directories, tibble::as_tibble) |>
+    purrr::list_rbind()
+  directory_roots <- directories_raw$path %||% character()
   if (!all(required_fields %in% names(files_raw))) {
     cli::cli_abort("Manifest entries need path, bytes, and sha256 fields.")
   }
@@ -58,12 +61,34 @@ verify_inputs <- function(manifest_path, raw_dir = project_path("data", "raw")) 
   if (!all(in_scope)) {
     cli::cli_abort("Every manifest file must be inside a declared dataset root.")
   }
+  if (length(directory_roots) > 0L) {
+    if (!identical(manifest_raw$directory_hash_format, "sha256-path-bytes-filehash-v1") ||
+        !all(c(required_fields, "file_count") %in% names(directories_raw)) ||
+        !validate_manifest_paths(directory_roots) || anyDuplicated(directory_roots) > 0L ||
+        !all(directory_roots %in% manifest_raw$roots) ||
+        !is.numeric(directories_raw$file_count) || anyNA(directories_raw$file_count) ||
+        any(!is.finite(directories_raw$file_count)) ||
+        any(directories_raw$file_count <= 0 | directories_raw$file_count != floor(directories_raw$file_count)) ||
+        !is.numeric(directories_raw$bytes) || anyNA(directories_raw$bytes) ||
+        any(!is.finite(directories_raw$bytes)) ||
+        any(directories_raw$bytes <= 0 | directories_raw$bytes != floor(directories_raw$bytes)) ||
+        !is.character(directories_raw$sha256) || anyNA(directories_raw$sha256) ||
+        any(!grepl("^[0-9a-f]{64}$", directories_raw$sha256))) {
+      cli::cli_abort("Manifest has invalid directory paths, file counts, sizes, hashes, or hash format.")
+    }
+    overlapping_files <- purrr::map_lgl(files_raw$path, function(path) {
+      any(startsWith(path, glue::glue("{directory_roots}/")))
+    })
+    if (any(overlapping_files)) {
+      cli::cli_abort("Lock a source root by directory checksum or by individual files, not both.")
+    }
+  }
   empty_roots <- manifest_raw$roots[!purrr::map_lgl(manifest_raw$roots, function(root) {
-    any(startsWith(files_raw$path, glue::glue("{root}/")))
+    root %in% directory_roots || any(startsWith(files_raw$path, glue::glue("{root}/")))
   })]
   if (length(empty_roots) > 0L) {
     cli::cli_abort(c(
-      "Every declared source root needs at least one reviewed file.",
+      "Every declared source root needs reviewed files or a directory checksum.",
       "x" = "{.path {empty_roots}}"
     ))
   }
@@ -78,7 +103,7 @@ verify_inputs <- function(manifest_path, raw_dir = project_path("data", "raw")) 
     ))
   }
 
-  actual_paths <- purrr::map(manifest_raw$roots, function(root) {
+  actual_paths <- purrr::map(setdiff(manifest_raw$roots, directory_roots), function(root) {
     root_path <- file.path(raw_dir, root)
     if (!dir.exists(root_path)) {
       return(character())
@@ -130,10 +155,30 @@ verify_inputs <- function(manifest_path, raw_dir = project_path("data", "raw")) 
     ))
   }
 
-  cli::cli_alert_success(
-    "Verified {scales::comma(nrow(files_checked))} files against SHA-256."
+  directory_checks <- purrr::map(directory_roots, function(root) {
+    cli::cli_alert_info("Hashing dataset directory {.file {root}}.")
+    expected <- dplyr::filter(directories_raw, path == root)
+    actual <- hash_directory(file.path(raw_dir, root))
+    if (expected$file_count != actual$file_count || expected$bytes != actual$bytes ||
+        expected$sha256 != actual$sha256) {
+      cli::cli_abort(c(
+        "Source directory differs from the reviewed manifest.",
+        "x" = "{.file {root}}",
+        "i" = "Check for missing, extra, renamed, or changed files; do not refresh hashes automatically."
+      ))
+    }
+    tibble::tibble(
+      path = root, bytes = expected$bytes, sha256 = expected$sha256,
+      actual_bytes = actual$bytes, actual_sha256 = actual$sha256,
+      matches = TRUE, file_count = actual$file_count
+    )
+  }) |>
+    purrr::list_rbind()
+  verified_inputs <- dplyr::bind_rows(
+    dplyr::mutate(files_checked, file_count = 1L), directory_checks
   )
-  invisible(files_checked)
+  cli::cli_alert_success("Verified {scales::comma(sum(verified_inputs$file_count))} files against SHA-256.")
+  invisible(verified_inputs)
 }
 
 require_manifest_roots <- function(manifest_path, roots) {

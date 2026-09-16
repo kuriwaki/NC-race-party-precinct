@@ -47,7 +47,7 @@ vtds <- precinct_geo$vtd
 cli::cli_alert_info(
   "Matching {config$tiger$year} full block groups to {scales::comma(nrow(precinct_geo))} SBE geometry rows."
 )
-tigris::options(tigris_use_cache = TRUE)
+options(tigris_use_cache = TRUE)
 acs_geo <- tigris::block_groups(config$state, year = config$tiger$year)
 matches <- geomander::geo_match(from = acs_geo, to = precinct_geo, method = "area")
 crosswalk <- tibble::tibble(GEOID = acs_geo$GEOID, vtd = vtds[matches])

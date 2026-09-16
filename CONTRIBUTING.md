@@ -1,13 +1,15 @@
 # Contributing
 
-This repository is currently a design draft. PRs can clarify the plan, document
-provenance, improve the examples, or propose small reviewed mapping changes.
-Production pipeline code will follow after the input/version choices settle.
+This repository contains a draft standalone implementation. PRs can improve
+the pipeline, document provenance, or propose small reviewed mapping changes.
+The full build and equivalence to the legacy outputs remain to be validated.
 
 ## Keep data local
 
 Put source data under `data/raw/`, intermediates under `data/intermediate/`,
-and deliverables under `release/`. These directories are ignored. Never
+and deliverables under `release/`. Only their READMEs are tracked. Follow
+[data/raw/README.md](data/raw/README.md) for the exact input placement and
+[config/pipeline.yml](config/pipeline.yml) for paths and build order. Never
 force-add L2 records, NC voter records, shapefiles, extracts, or Census caches.
 Do not include individual voter examples, addresses, credentials, or raw-record
 logs in PRs. Use invented rows for examples and aggregate diagnostics.
@@ -45,7 +47,15 @@ verification. Include the source/version and expected output impact; hashes
 should never be updated merely to silence a failure. An unreviewed hash proves
 only consistency with the file that generated it.
 
+[manifests/inputs.yml](manifests/inputs.yml) uses a single directory checksum for
+the voter snapshot and individual hashes for SBE components and the R1 point
+file. Keep partition hashes out of the YAML. The directory format and algorithm
+are documented in [data/raw/README.md](data/raw/README.md) and implemented in
+[R/nc-utils.R](R/nc-utils.R). [Stage 00](prepare/00_nc_download.R) verifies this
+manifest before [run.R](run.R) proceeds with the build.
+
 Eventually, public PR checks will run small invented-data examples, syntax and
 manifest checks, and data-exclusion checks. Full data validation will compare
 local outputs with the reference build using the same reviewed inputs and
-dependency versions. No complete pipeline or test suite is claimed at this stage.
+dependency versions. No completed end-to-end validation or test suite is claimed
+at this stage.

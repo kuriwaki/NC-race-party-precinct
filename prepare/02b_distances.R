@@ -25,7 +25,7 @@ use_cities <- dplyr::bind_rows(city_points, r1_points)
 cli::cli_alert_info(
   "Computing distances from NC {config$tiger$year} cartographic block groups to {scales::comma(nrow(use_cities))} points."
 )
-tigris::options(tigris_use_cache = TRUE)
+options(tigris_use_cache = TRUE)
 block_groups_cb <- tigris::block_groups(
   state = config$state,
   year = config$tiger$year,

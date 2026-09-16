@@ -55,4 +55,4 @@ download_sbe_precinct_zip <- function(
   invisible(zip_path)
 }
 
-cli::cli_alert_success("Stage 00 verified {scales::comma(nrow(verified_inputs))} locked input files.")
+cli::cli_alert_success("Stage 00 verified {scales::comma(sum(verified_inputs$file_count))} locked input files.")

@@ -71,6 +71,35 @@ hash_file <- function(path) {
   digest::digest(file = path, algo = "sha256", serialize = FALSE)
 }
 
+hash_directory <- function(path) {
+  if (!dir.exists(path)) {
+    cli::cli_abort("Input directory is missing: {.file {path}}.")
+  }
+  relative_paths <- list.files(
+    path, recursive = TRUE, all.files = TRUE, no.. = TRUE, include.dirs = FALSE
+  ) |>
+    sort(method = "radix")
+  if (length(relative_paths) == 0L || any(grepl("[\t\r\n]", relative_paths))) {
+    cli::cli_abort("Input directory must contain files with no tabs or newlines in their names.")
+  }
+
+  absolute_paths <- file.path(path, relative_paths)
+  file_bytes <- as.numeric(file.info(absolute_paths)$size)
+  file_hashes <- purrr::map_chr(absolute_paths, hash_file)
+  byte_labels <- scales::number(file_bytes, accuracy = 1, big.mark = "", decimal.mark = ".")
+
+  # Directory checksum v1: sort relative paths by radix order, then hash UTF-8
+  # records of path<TAB>bytes<TAB>file-sha256<LF>, including the final LF.
+  # Per-file hashes are computed locally but only the directory hash is stored.
+  records <- glue::glue("{relative_paths}\t{byte_labels}\t{file_hashes}\n", .trim = FALSE)
+  directory_text <- as.character(glue::glue_collapse(records, sep = ""))
+  list(
+    file_count = length(relative_paths),
+    bytes = sum(file_bytes),
+    sha256 = digest::digest(enc2utf8(directory_text), algo = "sha256", serialize = FALSE)
+  )
+}
+
 file_manifest <- function(paths, root_dir = project_root()) {
   normalized_paths <- normalizePath(paths, mustWork = TRUE)
   normalized_root <- normalizePath(root_dir, mustWork = TRUE)

@@ -16,7 +16,7 @@ if (!file.exists(distance_path)) {
   cli::cli_abort("Run stage 02b before ACS covariates: {.file {distance_path}} is missing.")
 }
 
-tigris::options(tigris_use_cache = TRUE)
+options(tigris_use_cache = TRUE)
 acs_year <- config$acs$year
 
 cli::cli_alert_info("Retrieving ACS {acs_year} tables and TIGER {config$tiger$year} area data.")

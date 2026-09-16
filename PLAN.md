@@ -1,8 +1,14 @@
 # Standalone NC pipeline: implementation plan
 
-Status: proposed design with examples. No production stages, full input lock,
-dependency lockfile, or CI workflow have been implemented. All paths below are
-relative to this repository unless explicitly identified as legacy provenance.
+Status: original design with implementation notes. Standalone stages now exist,
+and all three supplied input bundles are copied locally and hash-locked. The
+voter snapshot uses one directory checksum; SBE components and the R1 file have
+individual hashes. ACS/TIGER data are retrieved by code. See
+[README.md](README.md), [data/raw/README.md](data/raw/README.md), and
+[manifests/inputs.yml](manifests/inputs.yml) for current replication instructions.
+The full build, dependency lockfile, Census-response hashes, and CI remain
+future work. All paths below are relative to this repository unless explicitly
+identified as legacy provenance.
 
 ## 1. Scope and compatibility target
 
@@ -48,13 +54,13 @@ decides otherwise.
 
 | Input | Version used by the source code | Acquisition and hash plan |
 | --- | --- | --- |
-| NC voter registration | Snapshot labeled `2025-08-02`, stored as county-partitioned Parquet | Recover the original county ZIP/TSV snapshots and record their acquisition dates and hashes. The retained Parquet is already formatted and cannot alone establish a raw rebuild. Hash every partition if retaining it as a migration reference. |
-| SBE precinct geometry | `SBE_PRECINCTS_20250225` | Record the original ZIP hash when available, plus hashes for every extracted component. Seven existing components are covered by the example manifest. |
-| ACS | 2023 ACS estimates queried through `easycensus` | Explicitly fix the ACS product used by the existing helper (expected ACS 5-year; confirm locally when implementing), tables, geography, and state. Archive and hash the exact retrieved responses; do not silently accept a revised response. |
-| TIGER block groups | 2024 full geometry for area/matching; 2024 cartographic geometry (`cb = TRUE`) for distances | Retain both variants, archive the downloaded files and every shapefile component, and record the query options. These variants are not interchangeable. |
+| NC voter registration | Snapshot labeled `2025-08-02`, stored as county-partitioned Parquet | The 100 retained partitions are copied and locked by one directory checksum. Original county ZIP/TSV snapshots remain unrecovered; the formatted Parquet cannot alone establish a rebuild from those originals. |
+| SBE precinct geometry | `SBE_PRECINCTS_20250225` | Seven retained components are copied and match the previously recorded individual hashes. An original ZIP is not required by the configured build. |
+| ACS | 2023 ACS 5-year estimates queried through `easycensus` | Stage 02 retrieves these tables; no supplied ACS dataset is required. Query roles are documented in the input manifest. Archiving and hashing exact API responses remains future reproducibility work. |
+| TIGER block groups | 2024 full geometry for area/matching; 2024 cartographic geometry (`cb = TRUE`) for distances | Stages 02b, 02, and 03 fetch the required variants. No supplied TIGER files are required. These variants are not interchangeable; response hashes remain future work. |
 | County FIPS | NC entries of `tigris::fips_codes`; legacy stage 00 also has an explicit named vector | Make a reviewed 100-county reference table with character FIPS, full names, and explicit SBE download IDs. Do not infer a download ID from incidental row ordering. |
-| Cities | `ggredist::cities`, `pop_2020 > 100000`, in NC, SC, TN, VA, GA | Pin package version/source and hash a local extracted input; preserve the 2020 population threshold. |
-| R1 university locations | Legacy `~/Dropbox/precinct_ticketsplit/data-raw/colleges/r1_coords.rds` | Bring its source recipe and upstream inputs into the proposed stage 02a; resolve the missing inputs before a raw rebuild. |
+| Cities | `ggredist::cities`, `pop_2020 > 100000`, in NC, SC, TN, VA, GA | Read from the installed package; no supplied city dataset is required. Dependency pinning remains future work. |
+| R1 university locations | Legacy `precinct_ticketsplit/data-raw/colleges/r1_coords.rds` | The restored 147-point table is copied and hash-locked for stage 02a's configured `reviewed_points` mode. Reconstructing its upstream matching decisions remains separate provenance work. |
 | County regions | `prepare/NC-counties/nc-regions.R` | Copy the 100-row mapping into a small reviewed R reference file. Its current header says it came from an LLM; label it as a project mapping pending source review. |
 | L2 voter data | `VM2Uniform--NC--2025-10-03.tab` | Not consumed by stages 00–04. Keep optional and local; hash the licensed original and any extract separately if that branch is later requested. Both `*.tab` files and the data directory are already ignored. |
 
@@ -76,9 +82,11 @@ degree-granting institutions by NAICS description, `hi_offer` in 11/12, and
 `inst_size` in 2:5, then fuzzy-matches uppercased institution names within state.
 It keeps the largest similarity per institution and transforms to EPSG:4269.
 
-The local `r1_coords.rds` and spreadsheet currently have zero-byte sizes; they
-cannot be treated as valid inputs. Recover usable copies and their original
-source/version metadata. Replace stochastic fuzzy matching with a reviewed,
+The original `r1_coords.rds` has been restored and copied: 147 university points
+in EPSG:4269, 20,248 bytes. It is the only supplied university input required by
+the configured `reviewed_points` mode; the workbook and college geometry are
+not needed for that mode. A future rebuild from upstream institutions would
+need their original source/version metadata. Replace stochastic fuzzy matching with a reviewed,
 small identifier crosswalk, or pin the original implementation and resolve
 ties explicitly. Verify equivalent institution coverage and distances before
 accepting the replacement. The legacy distance script filters cities to five
@@ -97,7 +105,7 @@ NC-race-party-precinct.Rproj
 config/pipeline.yml                 # selected snapshots and build options
 manifests/inputs.yml                # reviewed SHA-256 values and provenance
 manifests/outputs.yml               # SHA-256 of published data files
-R/check-inputs.R                    # promote the example after review
+R/check-inputs.R                    # strict file and directory verification
 R/nc-reference.R                   # county IDs and region lookup
 R/nc-precinct-recodes.R             # small, documented recode tables
 prepare/00_nc_download.R
@@ -137,9 +145,9 @@ GDAL/GEOS/PROJ, s2, and mapshaper versions/settings with each local build.
 ## 4. Stage order and transformations
 
 The legacy numbering is not execution order: distances must precede ACS.
-The proposed driver runs **00 → 01 → 02a → 02b → 02 → 03 → 04**. It verifies
-each stage's selected raw inputs before use. A local build should be able to
-reuse verified downloads and run without network access.
+The implemented driver runs **00 → 01 → 02a → 02b → 02 → 03 → 04**. Stage 00
+verifies the supplied inputs before processing. Uncached Census retrievals need
+network access; a fully offline build remains future work.
 
 | Stage | Adapt from | Work and local products |
 | --- | --- | --- |
@@ -259,10 +267,6 @@ every required input file and every published data file (`*.rds`, `*.geojson`).
 The codebook is tracked in git and does not need a data-manifest hash. Hash
 rules are in §6.
 
-The combine example illustrates the count contract with invented values. It
-deliberately leaves one precinct without covariates to show retention and a
-`cli` warning. It does not implement the full covariate schema or geometry.
-
 ## 6. Hash verification and reproducibility
 
 Use tracked YAML manifests so that the data-format ignore rules do not hide
@@ -274,15 +278,20 @@ Use `digest::digest(file = path, algo = "sha256", serialize = FALSE)`; large
 files are hashed from disk without loading them as an R dataset.
 
 For shapefiles, verify the complete bundle, not only `.shp`. For partitioned
-Parquet, list every partition and compare the actual file inventory with the
-manifest, so added partitions cannot enter silently. Treat archives and their
+Parquet, store one directory checksum plus the total byte count and file count.
+The checksum covers relative paths and content hashes in sorted order, so a
+changed, missing, extra, or renamed partition fails verification. Individual
+partition hashes are computed locally and are not listed in the manifest. See
+[data/raw/README.md](data/raw/README.md) for the canonical checksum format.
+Treat archives and their
 extracted members as separate artifacts. Exclude only explicitly documented
 non-input metadata; do not silently accept extra files in a dataset's scope.
 
-The example manifest's hashes were measured from the existing local SBE files.
+The SBE manifest hashes were measured from the existing local SBE files.
 They establish byte identity with those files, not independent authenticity,
 download dates, or scientific correctness. Do not invent checksums for missing
-raw voter files, API responses, or university inputs. L2 needs its own optional
+raw voter files or API responses. The recovered university RDS has its own
+measured hash. L2 needs its own optional
 manifest group; a core build should not require it. Do not invent output hashes
 until those files exist.
 

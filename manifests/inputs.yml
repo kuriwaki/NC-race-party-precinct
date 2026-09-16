@@ -1,36 +1,135 @@
-# Full build manifest. The SBE component hashes below were measured from the
-# local legacy files. The voter snapshot and R1 university inputs must be added
-# with reviewed byte counts and SHA-256 hashes before run.R can build outputs.
+# Required local inputs for the configured build. All data paths are relative
+# to data/raw/. Placement: ../data/raw/README.md; pipeline: ../config/pipeline.yml.
+# directories records one checksum for the complete voter dataset; files records
+# individual SBE components and the R1 point file. hash_directory() in ../R/nc-utils.R
+# defines the directory checksum. Hashes establish identity with retained files,
+# not original acquisition dates or independent source authenticity.
 schema_version: 1
 algorithm: sha256
 dataset_id: nc_race_party_precinct_inputs
-source_description: "Locked source inputs for the standalone NC race-party-precinct pipeline"
-pending_roots:
-  - "ncvoter_2025-08-02"
-  - "r1_universities"
+source_description: Locked source inputs for the standalone NC race-party-precinct
+  pipeline
+pending_roots: []
 roots:
-  - "ncvoter_2025-08-02"
-  - "SBE_PRECINCTS_20250225"
-  - "r1_universities"
+- ncvoter_2025-08-02
+- SBE_PRECINCTS_20250225
+- r1_universities
+datasets:
+- root: ncvoter_2025-08-02
+  status: locked
+  description: NC voter registration snapshot labeled 2025-08-02, retained as 100
+    county-partitioned Parquet files.
+  role: Individual voter records supply precinct identifiers and race/ethnicity/party
+    codes for the precinct count table.
+  consumed_by: prepare/01_nc-vf-fmt.R
+  snapshot: '2025-08-02'
+  format: Hive-partitioned Parquet; county_name is encoded in directory names.
+  file_count: 100
+  provenance: Copied byte-for-byte from ei-practical/data/NC/ncvoter_2025-08-02; hashes
+    measured from those retained files.
+  limitation: This is a previously formatted snapshot. Original August 2025 county
+    ZIP/TSV files and their acquisition metadata have not been recovered.
+  placement: Preserve each county_name=.../part-0.parquet path, including county_name=NEW%20HANOVER.
+    Exclude .DS_Store.
+- root: SBE_PRECINCTS_20250225
+  status: locked
+  description: North Carolina State Board of Elections precinct geometry bundle labeled
+    2025-02-25.
+  role: Defines precinct boundaries and identifiers for block-group matching and the
+    published geometry.
+  consumed_by: prepare/03_nc-geomatch.R
+  snapshot: '2025-02-25'
+  format: ESRI Shapefile with seven retained components.
+  file_count: 7
+  provenance: Copied from ei-practical/data/NC/SBE_PRECINCTS_20250225 after matching
+    every previously recorded size and SHA-256.
+  placement: Keep all seven same-basename files together directly inside this root;
+    no extra wrapper directory, ZIP, XML, or metadata files.
+- root: r1_universities
+  status: locked
+  description: Legacy R1 university point table used by the configured reviewed_points
+    mode.
+  role: Adds university locations to large-city points when computing each NC block
+    group's nearest-location distance.
+  consumed_by:
+  - prepare/02a_nc-universities.R
+  - prepare/02b_distances.R
+  expected_files: r1_universities/r1_coords.rds
+  format: Nonempty sf RDS with point geometry in EPSG:4269, compatible with ggredist::cities.
+  file_count: 1
+  rows: 147
+  provenance: Legacy precinct_ticketsplit/data-raw/colleges/r1_coords.rds, produced
+    by that project's R/prepare/R1_universities.R.
+  limitation: The original point table is used as a frozen input; its source vintage
+    and original fuzzy-match decisions have not been independently reconstructed.
+  placement: Copy r1_coords.rds directly into this root without re-saving, transforming,
+    or filtering the 147 university points.
+generated_inputs:
+- id: acs
+  description: 2023 ACS 5-year population, median age, median household income, education,
+    and county White non-Hispanic poverty estimates.
+  role: Builds population and demographic covariates for aggregation to precincts.
+  survey: acs5
+  year: 2023
+  tables:
+  - B01003
+  - B01002
+  - B19013
+  - B15003
+  - B17001
+  generated_by: prepare/02_nc-acs_covs.R
+  acquisition: Fetched through easycensus::cens_get_acs; no supplied ACS file is required.
+  hash_status: API response bytes are not currently locked by this manifest.
+- id: tiger_block_groups
+  description: 2024 NC TIGER full block-group boundaries and cartographic block-group
+    boundaries.
+  role: Full geometry supplies land area and precinct matching; cartographic geometry
+    supplies distances.
+  year: 2024
+  generated_by:
+  - prepare/02b_distances.R
+  - prepare/02_nc-acs_covs.R
+  - prepare/03_nc-geomatch.R
+  acquisition: Fetched with tigris::block_groups; cb = TRUE only for distances. No
+    supplied block-group shapefiles are required.
+  hash_status: Downloaded response bytes are not currently locked by this manifest.
+- id: cities
+  description: ggredist::cities entries in NC, SC, TN, VA, and GA with 2020 population
+    greater than 100000.
+  role: Provides city points to combine with the supplied R1 universities for distances.
+  generated_by: prepare/02b_distances.R
+  acquisition: Read from the installed ggredist package; no supplied city file is
+    required.
+  hash_status: Package data are not currently locked by this manifest; dependency
+    versions remain to be pinned.
+directory_hash_format: sha256-path-bytes-filehash-v1
+directories:
+- path: ncvoter_2025-08-02
+  file_count: 100
+  bytes: 657803124
+  sha256: 2329f00263908e505323ff8cf3b252b750818535df13fc97456c30173856e863
 files:
-  - path: "SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.cpg"
-    bytes: 5
-    sha256: "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
-  - path: "SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.dbf"
-    bytes: 1218935
-    sha256: "d37424fca38ac5ae6dae216ee73c31343e3b61ae0f1fc394e46b206d71a84461"
-  - path: "SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.prj"
-    bytes: 550
-    sha256: "1f904c84e6f74baa5076adafdc5d9dfdad208075f8924e416519bc589a1f23bb"
-  - path: "SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.sbn"
-    bytes: 26828
-    sha256: "36e2d454640e28cbc6003048038471a6518490986eb7267e73dc350d8f9b7ba0"
-  - path: "SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.sbx"
-    bytes: 1980
-    sha256: "1156188f3cbcfdc510f880bd601bd52ce84222730012d52dc204f10fd12b45ae"
-  - path: "SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.shp"
-    bytes: 31648140
-    sha256: "09f2d5412198d165f7e90aec76bd932448fb3ba320e36706287bb3431a15c167"
-  - path: "SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.shx"
-    bytes: 21340
-    sha256: "a2ba963ad70a6b4f99da1f1a74fd27ddcb4fc599b9c8ff46093fc7ed8adc08b6"
+- path: SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.cpg
+  bytes: 5
+  sha256: 3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824
+- path: SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.dbf
+  bytes: 1218935
+  sha256: d37424fca38ac5ae6dae216ee73c31343e3b61ae0f1fc394e46b206d71a84461
+- path: SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.prj
+  bytes: 550
+  sha256: 1f904c84e6f74baa5076adafdc5d9dfdad208075f8924e416519bc589a1f23bb
+- path: SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.sbn
+  bytes: 26828
+  sha256: 36e2d454640e28cbc6003048038471a6518490986eb7267e73dc350d8f9b7ba0
+- path: SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.sbx
+  bytes: 1980
+  sha256: 1156188f3cbcfdc510f880bd601bd52ce84222730012d52dc204f10fd12b45ae
+- path: SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.shp
+  bytes: 31648140
+  sha256: 09f2d5412198d165f7e90aec76bd932448fb3ba320e36706287bb3431a15c167
+- path: SBE_PRECINCTS_20250225/SBE_PRECINCTS_20250225.shx
+  bytes: 21340
+  sha256: a2ba963ad70a6b4f99da1f1a74fd27ddcb4fc599b9c8ff46093fc7ed8adc08b6
+- path: r1_universities/r1_coords.rds
+  bytes: 20248
+  sha256: 6af403084da5bcddd43750edba7563e0e017d53f3e03b69e01c4dccd96ca3ec4
