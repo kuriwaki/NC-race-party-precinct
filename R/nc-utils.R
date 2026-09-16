@@ -66,6 +66,16 @@ write_yaml_file <- function(x, path) {
   invisible(path)
 }
 
+# Voter input ----
+
+open_voter_dataset <- function(path) {
+  dataset <- arrow::open_dataset(path)
+  # Use the stored fields/types without restoring R attributes such as the
+  # county vector's partition-length names. These trigger Arrow #48712 during
+  # lazy queries and are unused by stage 01. Source files are never rewritten.
+  dataset$WithSchema(arrow::schema(dataset$schema$fields))
+}
+
 # Hash manifests ----
 
 hash_file <- function(path) {

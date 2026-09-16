@@ -15,7 +15,7 @@ ensure_pipeline_dirs()
 cli::cli_h1("Stage 01: voter counts")
 require_manifest_roots(project_path(config$manifests$inputs), config$inputs$voter_root)
 
-nc_ds <- arrow::open_dataset(project_path(config$paths$raw, config$inputs$voter_root))
+nc_ds <- open_voter_dataset(project_path(config$paths$raw, config$inputs$voter_root))
 required_cols <- c("county_name", "county", "precinct_abbrv", "vtd_abbrv", "race_code", "ethnic_code", "party_cd")
 checkmate::assert_names(names(nc_ds), must.include = required_cols)
 

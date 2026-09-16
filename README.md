@@ -127,6 +127,14 @@ Manifest validation uses `checkmate`, ACS retrieval uses `easycensus`, and
 spatial matching uses `geomander`. [config/pipeline.yml](config/pipeline.yml)
 controls input roots, Census years, build order, and destination paths.
 
+Stage 01 opens the voter snapshot with its stored Arrow column types but omits
+unused R attributes in memory. The snapshot's `county` column carries a
+partition-length `names` attribute that triggers spurious `Invalid metadata$r`
+warnings in Arrow 24 ([upstream issue](https://github.com/apache/arrow/issues/48712)).
+This avoids the warning without suppressing other warnings or rewriting the
+hash-locked Parquet files. [tests/test-voter-input.R](tests/test-voter-input.R)
+checks the query results, identifier strings, and unchanged source bytes.
+
 | Directory | Contents and instructions |
 | --- | --- |
 | [data/raw/](data/raw/README.md) | The three supplied, hash-locked input bundles |
