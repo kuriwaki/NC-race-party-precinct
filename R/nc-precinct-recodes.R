@@ -19,6 +19,12 @@ nc_joint_cell_names <- function() {
 
 # Voter precinct rules ----
 
+county_voter_totals <- function(voter_counts) {
+  voter_counts |>
+    dplyr::summarize(n = sum(.data$n), .by = c("county_name", "county", "race", "party")) |>
+    dplyr::filter(.data$n != 0)
+}
+
 counties_using_vtd_abbrv <- function() {
   c("GASTON", "WAKE", "HARNETT", "PENDER", "COLUMBUS")
 }

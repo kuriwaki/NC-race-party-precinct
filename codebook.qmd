@@ -9,7 +9,7 @@ format: html
 
 The pipeline writes three ignored deliverables under `release/`:
 
-- `nc_vtd_wide.rds`: one row per voter-file precinct key.
+- `nc_vtd_wide.csv`: one row per voter-file precinct key.
 - `nc_vtd_geo.rds`: simplified SBE precinct geometry in the reference State Plane CRS.
 - `nc_vtd_geo.geojson`: the same identifier-only geometry transformed to WGS84 longitude/latitude for GeoJSON.
 
@@ -17,6 +17,12 @@ Input hashes live in `manifests/inputs.yml`. Output hashes live in
 `manifests/outputs.yml` after a reviewed successful build.
 
 # Wide Table ----
+
+The CSV writes missing values as blank fields and zero counts as `0`. Blanks
+mean missing or unavailable, including covariates for precincts with no matched
+block group. Read with `na = ""` and import `county` and `vtd` as character
+strings; CSV does not preserve R column types. See the
+[release README](release/README.md) for an import example.
 
 Identifiers:
 

@@ -17,7 +17,7 @@ No supplied voter files, Census downloads, or API key are needed to run it.
 
 The example verifies [its own manifest](manifests/example-tyrrell.yml), then runs
 the same spatial matching and combination functions as stages 03 and 04.
-It writes the two core RDS datasets plus CSV/GeoJSON previews under
+It writes the wide-table CSV and precinct geometry (RDS/GeoJSON) under
 `release/tyrrell/`. It starts from frozen aggregate counts and block-group
 covariates; use the full pipeline below to rebuild those inputs.
 
@@ -146,9 +146,9 @@ decisions remains separate provenance work, described in the input manifest.
 
 The overall pipeline publishes:
 
-- RDS: `release/nc_vtd_wide.rds` (precinct race-by-party counts, margins,
-  regions, and covariates) and `release/nc_vtd_geo.rds` (simplified SBE
-  geometry in the reference CRS).
+- CSV: `release/nc_vtd_wide.csv` (precinct race-by-party counts, margins,
+  regions, and covariates). Missing values are blank; zeros remain `0`.
+- RDS: `release/nc_vtd_geo.rds` (simplified SBE geometry in the reference CRS).
 - GeoJSON: `release/nc_vtd_geo.geojson`, the same precinct geometry with
   identifier columns only (`vtd`, `county_nam`, `fips`).
 - Codebook: `codebook.qmd`.

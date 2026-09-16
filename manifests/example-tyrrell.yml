@@ -1,0 +1,43 @@
+schema_version: 1.0
+algorithm: sha256
+dataset_id: tyrrell_offline_example
+roots: inputs
+pending_roots: []
+county: '37177'
+source_manifest: manifests/inputs.yml
+intermediate_source: ../prepare/data
+source_stages:
+- prepare/01_nc-vf-fmt.R
+- prepare/02_nc-acs_covs.R
+acs_year: 2023
+tiger_year: 2024
+precinct_crs: 2264
+block_group_crs: 4269
+simplify_keep: 0.04
+expected:
+  precincts: 6
+  voter_total: 1450
+  population: 3376.0
+files:
+- path: inputs/voter-counts.csv
+  bytes: 1622.0
+  sha256: d16bc9f1358d0a6b53e87efe5025d97e4fcf18c3f42fc7dd1f4c90cfee3d7f4d
+  rows: 47
+  description: Tyrrell precinct-by-race-by-party registration counts; no individual
+    records.
+  role: Pivot the 16 joint cells and compute precinct race, party, and total margins.
+- path: inputs/block-groups.geojson
+  bytes: 105117.0
+  sha256: af1b664e7f47466e845bb7ea25f7eaefe9fce4a6be53e43f0abfd2d7a52b0817
+  rows: 5
+  description: Five 2024 TIGER block groups with frozen ACS 2023 five-year covariates
+    and distances.
+  role: Match block groups to precincts by area and population-weight the final covariates.
+- path: inputs/precincts.geojson
+  bytes: 114443.0
+  sha256: 082b672a3e655defae50f05fd23f0363a432600cc6207f3588961d3f39055d4d
+  rows: 6
+  description: Six unsimplified Tyrrell precinct boundaries from the 2025-02-25 SBE
+    bundle.
+  role: Define match targets and supply the final geometry with vtd, county_nam, and
+    fips.

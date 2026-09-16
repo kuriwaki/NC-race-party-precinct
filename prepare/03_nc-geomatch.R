@@ -7,8 +7,9 @@ source("R/nc-utils.R")
 source("R/check-inputs.R")
 source("R/nc-reference.R")
 source("R/nc-precinct-recodes.R")
+source("R/nc-geomatch.R")
 
-require_packages(c("cli", "dplyr", "geomander", "readr", "rmapshaper", "scales", "sf", "stringr", "tibble", "tigris", "tidyr", "yaml"))
+require_packages(c("dplyr", "geomander", "rmapshaper", "sf", "stringr", "tibble", "tigris"))
 
 config <- read_pipeline_config()
 ensure_pipeline_dirs()
@@ -43,14 +44,12 @@ precinct_geo <- precinct_geo_raw |>
   dplyr::left_join(county_geometry_ref, by = "county_nam", relationship = "many-to-one") |>
   dplyr::mutate(vtd = stringr::str_c(.data$fips, .data$prec_id), .after = "enr_desc")
 
-vtds <- precinct_geo$vtd
 cli::cli_alert_info(
   "Matching {config$tiger$year} full block groups to {scales::comma(nrow(precinct_geo))} SBE geometry rows."
 )
 options(tigris_use_cache = TRUE)
 acs_geo <- tigris::block_groups(config$state, year = config$tiger$year)
-matches <- geomander::geo_match(from = acs_geo, to = precinct_geo, method = "area")
-crosswalk <- tibble::tibble(GEOID = acs_geo$GEOID, vtd = vtds[matches])
+crosswalk <- block_group_crosswalk(acs_geo, precinct_geo)
 
 coverage <- tibble::tibble(
   metric = c("block_groups", "sbe_rows", "sbe_distinct_vtd", "matched_distinct_vtd"),
@@ -64,14 +63,7 @@ coverage <- tibble::tibble(
 write_join_diagnostic(coverage, project_path(config$paths$diagnostics, "stage03_match_coverage.rds"))
 
 bg_cov <- readr::read_rds(cov_path)
-vtd_cov <- bg_cov |>
-  dplyr::left_join(crosswalk, by = "GEOID", relationship = "one-to-one") |>
-  dplyr::summarize(
-    dplyr::across(-c(GEOID, pop, area), ~ weighted.mean(.x, .data$pop)),
-    pop_total = sum(.data$pop),
-    area_total = sum(.data$area),
-    .by = "vtd"
-  )
+vtd_cov <- aggregate_precinct_covariates(bg_cov, crosswalk)
 
 vtd_geo <- precinct_geo |>
   dplyr::select(vtd, fips, county_nam) |>

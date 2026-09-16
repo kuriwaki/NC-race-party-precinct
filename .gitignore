@@ -72,6 +72,11 @@
 /codebook.html
 /codebook_files/
 
+# Reviewed offline example: allow only these three small, aggregate/public files.
+!/examples/tyrrell/inputs/voter-counts.csv
+!/examples/tyrrell/inputs/block-groups.geojson
+!/examples/tyrrell/inputs/precincts.geojson
+
 # Credentials and machine-specific configuration.
 .Renviron
 .Renviron.*

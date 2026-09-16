@@ -9,7 +9,7 @@ source("R/nc-utils.R")
 source("R/check-inputs.R")
 source("R/nc-reference.R")
 
-require_packages(c("cli", "digest", "dplyr", "glue", "purrr", "readr", "scales", "stringr", "tibble", "yaml"))
+require_packages(c("checkmate", "digest", "dplyr", "stringr", "tibble"))
 
 config <- read_pipeline_config()
 ensure_pipeline_dirs()
@@ -32,11 +32,11 @@ download_current_voter_zip <- function(county_name, output_dir = project_path(co
     cli::cli_abort("Unknown NC county: {.val {county_name}}.")
   }
 
-  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  fs::dir_create(output_dir)
   url <- glue::glue(
     "https://s3.amazonaws.com/dl.ncsbe.gov/data/ncvoter{county_row$sbe_download_id}.zip"
   )
-  zip_path <- file.path(output_dir, glue::glue("ncvoter{county_row$sbe_download_id}.zip"))
+  zip_path <- fs::path(output_dir, glue::glue("ncvoter{county_row$sbe_download_id}.zip"))
   utils::download.file(url, zip_path, quiet = TRUE, mode = "wb")
   cli::cli_alert_success("Downloaded current moving-endpoint voter ZIP: {.file {zip_path}}.")
   invisible(zip_path)
@@ -46,9 +46,9 @@ download_sbe_precinct_zip <- function(
   version = config$snapshots$sbe_precincts,
   output_dir = project_path(config$paths$raw)
 ) {
-  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  fs::dir_create(output_dir)
   zip_name <- glue::glue("{version}.zip")
-  zip_path <- file.path(output_dir, zip_name)
+  zip_path <- fs::path(output_dir, zip_name)
   url <- glue::glue("https://s3.amazonaws.com/dl.ncsbe.gov/PrecinctMaps/{zip_name}")
   utils::download.file(url, zip_path, quiet = TRUE, mode = "wb")
   cli::cli_alert_success("Downloaded SBE precinct ZIP: {.file {zip_path}}.")

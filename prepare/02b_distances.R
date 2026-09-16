@@ -5,7 +5,7 @@
 
 source("R/nc-utils.R")
 
-require_packages(c("cli", "dplyr", "ggredist", "purrr", "readr", "scales", "sf", "tibble", "tigris", "yaml"))
+require_packages(c("dplyr", "ggredist", "sf", "tibble", "tigris"))
 
 config <- read_pipeline_config()
 ensure_pipeline_dirs()

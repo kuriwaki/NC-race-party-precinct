@@ -5,11 +5,11 @@
 project_root <- function() {
   root <- getOption("nc_race_party_precinct.root")
   if (!is.null(root)) {
-    return(normalizePath(root, mustWork = TRUE))
+    return(fs::path_real(root))
   }
 
-  cwd <- normalizePath(getwd(), mustWork = TRUE)
-  if (file.exists(file.path(cwd, "NC-race-party-precinct.Rproj"))) {
+  cwd <- fs::path_real(getwd())
+  if (fs::file_exists(fs::path(cwd, "NC-race-party-precinct.Rproj"))) {
     return(cwd)
   }
 
@@ -19,7 +19,7 @@ project_root <- function() {
 }
 
 project_path <- function(...) {
-  file.path(project_root(), ...)
+  fs::path(project_root(), ...)
 }
 
 ensure_pipeline_dirs <- function() {
@@ -27,7 +27,7 @@ ensure_pipeline_dirs <- function() {
     "data/raw", "data/intermediate", "release", "data/diagnostics",
     "cache", "logs"
   )
-  purrr::walk(project_path(dirs), dir.create, recursive = TRUE, showWarnings = FALSE)
+  fs::dir_create(project_path(dirs))
   invisible(dirs)
 }
 
@@ -40,27 +40,28 @@ read_pipeline_config <- function(path = project_path("config", "pipeline.yml")) 
   yaml::read_yaml(path)
 }
 
-require_packages <- function(packages) {
-  missing_packages <- packages[!purrr::map_lgl(packages, requireNamespace, quietly = TRUE)]
+require_packages <- function(packages = character()) {
+  required <- unique(c("cli", "fs", "glue", "purrr", "readr", "scales", "yaml", packages))
+  missing_packages <- required[!vapply(required, requireNamespace, logical(1), quietly = TRUE)]
   if (length(missing_packages) > 0L) {
     cli::cli_abort(c(
       "Install required R packages before running this stage.",
       "x" = "{.pkg {missing_packages}}"
     ))
   }
-  invisible(packages)
+  invisible(required)
 }
 
 write_stage_rds <- function(x, path, compress = "xz") {
-  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  fs::dir_create(fs::path_dir(path))
   readr::write_rds(x, path, compress = compress)
   cli::cli_alert_success("Wrote {.file {path}}.")
   invisible(path)
 }
 
 write_yaml_file <- function(x, path) {
-  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
-  yaml::write_yaml(x, path)
+  fs::dir_create(fs::path_dir(path))
+  yaml::write_yaml(x, path, precision = 17)
   cli::cli_alert_success("Wrote {.file {path}}.")
   invisible(path)
 }
@@ -72,19 +73,19 @@ hash_file <- function(path) {
 }
 
 hash_directory <- function(path) {
-  if (!dir.exists(path)) {
+  if (!fs::dir_exists(path)) {
     cli::cli_abort("Input directory is missing: {.file {path}}.")
   }
-  relative_paths <- list.files(
-    path, recursive = TRUE, all.files = TRUE, no.. = TRUE, include.dirs = FALSE
-  ) |>
+  relative_paths <- fs::dir_ls(path, recurse = TRUE, all = TRUE, type = c("file", "symlink")) |>
+    fs::path_rel(start = path) |>
+    as.character() |>
     sort(method = "radix")
   if (length(relative_paths) == 0L || any(grepl("[\t\r\n]", relative_paths))) {
     cli::cli_abort("Input directory must contain files with no tabs or newlines in their names.")
   }
 
-  absolute_paths <- file.path(path, relative_paths)
-  file_bytes <- as.numeric(file.info(absolute_paths)$size)
+  absolute_paths <- fs::path(path, relative_paths)
+  file_bytes <- as.numeric(fs::file_size(absolute_paths))
   file_hashes <- purrr::map_chr(absolute_paths, hash_file)
   byte_labels <- scales::number(file_bytes, accuracy = 1, big.mark = "", decimal.mark = ".")
 
@@ -101,19 +102,15 @@ hash_directory <- function(path) {
 }
 
 file_manifest <- function(paths, root_dir = project_root()) {
-  normalized_paths <- normalizePath(paths, mustWork = TRUE)
-  normalized_root <- normalizePath(root_dir, mustWork = TRUE)
-  rel_paths <- sub(glue::glue("^{normalized_root}/?"), "", normalized_paths)
-
   tibble::tibble(
-    path = rel_paths,
-    bytes = as.numeric(file.info(normalized_paths)$size),
-    sha256 = purrr::map_chr(normalized_paths, hash_file)
+    path = as.character(fs::path_rel(fs::path_real(paths), start = fs::path_real(root_dir))),
+    bytes = as.numeric(fs::file_size(paths)),
+    sha256 = purrr::map_chr(paths, hash_file)
   )
 }
 
 write_output_manifest <- function(
-  paths = project_path("release", c("nc_vtd_wide.rds", "nc_vtd_geo.rds", "nc_vtd_geo.geojson")),
+  paths = project_path("release", c("nc_vtd_wide.csv", "nc_vtd_geo.rds", "nc_vtd_geo.geojson")),
   manifest_path = project_path("manifests", "outputs.yml")
 ) {
   missing_paths <- paths[!file.exists(paths)]
@@ -136,7 +133,7 @@ write_output_manifest <- function(
 # Diagnostics ----
 
 write_join_diagnostic <- function(x, path) {
-  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  fs::dir_create(fs::path_dir(path))
   readr::write_rds(x, path, compress = "xz")
   cli::cli_alert_info("Wrote diagnostic {.file {path}}.")
   invisible(path)

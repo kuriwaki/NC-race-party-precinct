@@ -60,7 +60,7 @@ decides otherwise.
 | TIGER block groups | 2024 full geometry for area/matching; 2024 cartographic geometry (`cb = TRUE`) for distances | Stages 02b, 02, and 03 fetch the required variants. No supplied TIGER files are required. These variants are not interchangeable; response hashes remain future work. |
 | County FIPS | NC entries of `tigris::fips_codes`; legacy stage 00 also has an explicit named vector | Make a reviewed 100-county reference table with character FIPS, full names, and explicit SBE download IDs. Do not infer a download ID from incidental row ordering. |
 | Cities | `ggredist::cities`, `pop_2020 > 100000`, in NC, SC, TN, VA, GA | Read from the installed package; no supplied city dataset is required. Dependency pinning remains future work. |
-| R1 university locations | Legacy `precinct_ticketsplit/data-raw/colleges/r1_coords.rds` | The restored 147-point table is copied and hash-locked for stage 02a's configured `reviewed_points` mode. Reconstructing its upstream matching decisions remains separate provenance work. |
+| R1 university locations | Legacy `precinct_ticketsplit/data-raw/colleges/r1_coords.rds` | The restored 147-point table is copied and hash-locked for stage 02a. Reconstructing its upstream matching decisions remains separate provenance work. |
 | County regions | `prepare/NC-counties/nc-regions.R` | Copy the 100-row mapping into a small reviewed R reference file. Its current header says it came from an LLM; label it as a project mapping pending source review. |
 | L2 voter data | `VM2Uniform--NC--2025-10-03.tab` | Not consumed by stages 00–04. Keep optional and local; hash the licensed original and any extract separately if that branch is later requested. Both `*.tab` files and the data directory are already ignored. |
 
@@ -84,8 +84,7 @@ It keeps the largest similarity per institution and transforms to EPSG:4269.
 
 The original `r1_coords.rds` has been restored and copied: 147 university points
 in EPSG:4269, 20,248 bytes. It is the only supplied university input required by
-the configured `reviewed_points` mode; the workbook and college geometry are
-not needed for that mode. A future rebuild from upstream institutions would
+the current build; the workbook and college geometry are not needed. A future rebuild from upstream institutions would
 need their original source/version metadata. Replace stochastic fuzzy matching with a reviewed,
 small identifier crosswalk, or pin the original implementation and resolve
 ties explicitly. Verify equivalent institution coverage and distances before
@@ -106,6 +105,7 @@ config/pipeline.yml                 # selected snapshots and build options
 manifests/inputs.yml                # reviewed SHA-256 values and provenance
 manifests/outputs.yml               # SHA-256 of published data files
 R/check-inputs.R                    # strict file and directory verification
+R/nc-acs.R                          # shared age/income fallback
 R/nc-reference.R                   # county IDs and region lookup
 R/nc-precinct-recodes.R             # small, documented recode tables
 prepare/00_nc_download.R
@@ -116,6 +116,7 @@ prepare/02_nc-acs_covs.R
 prepare/03_nc-geomatch.R
 prepare/04_nc-wide_combine.R
 run.R                              # explicit stage order, clean-session build
+tests/test-pipeline.R               # focused testthat checks, no supplied data
 renv.lock                          # create once dependencies are settled
 data/raw/                          # ignored, immutable acquired inputs
 data/intermediate/                 # ignored, rebuildable stage outputs
@@ -153,7 +154,7 @@ network access; a fully offline build remains future work.
 | --- | --- | --- |
 | 00: acquire/verify | `prepare/00_nc_download.R` | Fetch selected public inputs or explain manual placement; verify archives before extraction and components afterward. Separate acquisition from formatting. Produce immutable raw inputs. |
 | 01: voter counts | `prepare/01_nc-vf-fmt.R`, race/party mapping in 00 | Read raw records with declared types, format race/party, apply the exact exclusions and precinct recodes, then count to `data/intermediate/nc_vf_agg.rds`. |
-| 02a: universities | External recipe described above | Rebuild the point table from pinned institutional sources and a reviewed crosswalk, writing `r1_coords.rds` locally. |
+| 02a: universities | Supplied R1 point table | Validate the frozen sf input and write `r1_coords.rds` locally. The unused crosswalk mode has been removed. |
 | 02b: distances | `prepare/02b_distances.R` | Assemble cities/universities, explicitly align CRS/units, compute minimum geometry-to-point distance, write `cities_dist.rds` in meters. |
 | 02: covariates | `prepare/02_nc-acs_covs.R` | Construct block-group population, area, age, income, education, density, distance, and county White poverty; write `nc_bg_cov.rds`. |
 | 03: spatial match | `prepare/03_nc-geomatch.R` | Apply SBE ID corrections, assign each full block group to the precinct with maximum area overlap, aggregate covariates, simplify geometry, and write `nc_vtd_cov.rds` and intermediate geometry. |
@@ -212,15 +213,16 @@ cardinality alone does not detect missing keys.
 
 ## 5. Output contract
 
-The published products are (1) RDS files, (2) a GeoJSON of the precinct
+The published products are (1) a wide-table CSV and geometry RDS, (2) a GeoJSON of the precinct
 geometry with identifiers, (3) a Quarto codebook, and SHA-256 hashes of the
 input and output data files. Data files go under `release/` and remain
 gitignored. `codebook.qmd` and the YAML manifests are tracked.
 
-### RDS
+### Wide CSV and geometry RDS
 
-`nc_vtd_wide.rds` is a non-spatial table with one row per `vtd`. Keep identifiers
-as character strings to retain leading zeros. Preserve these names and ordering:
+`nc_vtd_wide.csv` is a non-spatial table with one row per `vtd`. Keep identifiers
+as character strings when importing CSV to retain leading zeros. Export missing
+values as blank fields (`na = ""`); zero remains `0`. Preserve these names and ordering:
 
 ```text
 county_name, county, nc_region_4, vtd, total,
@@ -271,7 +273,7 @@ rules are in §6.
 
 Use tracked YAML manifests so that the data-format ignore rules do not hide
 the checksums. `manifests/inputs.yml` covers required source files;
-`manifests/outputs.yml` covers the published RDS and GeoJSON files. Record a
+`manifests/outputs.yml` covers the published CSV, RDS, and GeoJSON files. Record a
 dataset ID, source version, acquisition method/date when known, relative path,
 byte count, and lowercase SHA-256 for every required file.
 Use `digest::digest(file = path, algo = "sha256", serialize = FALSE)`; large
@@ -342,7 +344,7 @@ porting bug to fix in this plan.
 3. Compare the new outputs with the saved reference: exact integer cells and
    margins, county totals, 86 unmatched covariate keys, geometry key coverage,
    CRS, and documented numeric/geometry tolerances. Investigate differences.
-   Record SHA-256 values for the published RDS and GeoJSON files. Note any
+   Record SHA-256 values for the published CSV, RDS, and GeoJSON files. Note any
    geometry row-count mismatch; do not treat resolving it as a requirement of
    this milestone.
 4. Add a small invented-data PR smoke check and a tracked-file size/type check.

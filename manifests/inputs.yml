@@ -47,8 +47,7 @@ datasets:
     no extra wrapper directory, ZIP, XML, or metadata files.
 - root: r1_universities
   status: locked
-  description: Legacy R1 university point table used by the configured reviewed_points
-    mode.
+  description: Supplied legacy R1 university point table, validated by stage 02a.
   role: Adds university locations to large-city points when computing each NC block
     group's nearest-location distance.
   consumed_by:

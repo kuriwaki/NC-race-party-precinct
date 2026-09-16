@@ -6,7 +6,7 @@ options(nc_race_party_precinct.root = normalizePath(getwd(), mustWork = TRUE))
 
 source("R/nc-utils.R")
 
-require_packages(c("cli", "purrr", "yaml"))
+require_packages()
 
 config <- read_pipeline_config()
 stages <- unlist(config$run$stages, use.names = FALSE)

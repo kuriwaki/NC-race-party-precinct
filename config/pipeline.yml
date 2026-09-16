@@ -34,12 +34,7 @@ run:
     - "04"
 
 universities:
-  mode: "reviewed_points"
   reviewed_points: "r1_universities/r1_coords.rds"
-  source_geometry: "r1_universities/us-colleges-and-universities@public"
-  r1_workbook: "r1_universities/wikipedia_R1.xlsx"
-  crosswalk: "references/r1-universities-crosswalk.yml"
-  source_id_column: "objectid"
 
 distances:
   states:
