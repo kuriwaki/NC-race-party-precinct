@@ -1,35 +1,34 @@
 # NC race, party, and precinct data
 
-**Draft implementation for iteration.** This repository builds the NC precinct
+This repository builds the NC precinct
 datasets from three supplied input bundles plus Census data retrieved by code.
-All 108 supplied files are covered by
-[manifests/inputs.yml](manifests/inputs.yml): one checksum for the complete voter
-dataset, plus individual hashes for the SBE components and R1 file. Data remain local and are
-excluded from Git; a clone contains instructions and code, not the data.
-The full build and equivalence to the legacy outputs remain to be validated.
 
-The intended pipeline publishes:
 
-- RDS: `release/nc_vtd_wide.rds` (precinct race-by-party counts, margins,
-  regions, and covariates) and `release/nc_vtd_geo.rds` (simplified SBE
-  geometry in the reference CRS).
-- GeoJSON: `release/nc_vtd_geo.geojson`, the same precinct geometry with
-  identifier columns only (`vtd`, `county_nam`, `fips`).
-- Codebook: `codebook.qmd`.
-- SHA-256 hashes of supplied inputs in [manifests/inputs.yml](manifests/inputs.yml).
-  [manifests/outputs.yml](manifests/outputs.yml) will hold release hashes after
-  a reviewed successful build.
+## Getting Started
 
-Cite the dataset and its NCSBE, Census, and other sources with
-[CITATION.cff](CITATION.cff).
+Try a small county first:
 
-Start with [data/raw/README.md](data/raw/README.md) to place supplied files.
+Run `Rscript examples/tyrrell/run.R` from this repository's root. The
+[example README](examples/tyrrell/README.md) lists the required packages and explains
+the inputs, outputs, and measured memory use. It uses six precincts, five block
+groups, and 47 aggregate race-by-party count rows from Tyrrell County. Its three
+CSV/GeoJSON inputs total 200Kb and can be previewed on GitHub.
+No supplied voter files, Census downloads, or API key are needed to run it.
+
+The example verifies [its own manifest](manifests/example-tyrrell.yml), then runs
+the same spatial matching and combination functions as stages 03 and 04.
+It writes the two core RDS datasets plus CSV/GeoJSON previews under
+`release/tyrrell/`. It starts from frozen aggregate counts and block-group
+covariates; use the full pipeline below to rebuild those inputs.
+
+For a full run, start with [data/raw/README.md](data/raw/README.md) to place supplied files.
 [PLAN.md](PLAN.md) records the original design, output definitions, and remaining
 validation work. The reference is the NC preparation pipeline in `ei-practical`,
 ending in `prepare/04_nc-wide_combine.R`; this implementation uses paths within
 this repository and does not require that checkout.
 
-## What exists now
+
+## Step 0. What exists now
 
 - [.gitignore](.gitignore) excludes local data, common data formats, outputs,
   caches, credentials, and R session files. The READMEs in the data and release
@@ -52,7 +51,16 @@ this repository and does not require that checkout.
   Census ACS/TIGER, and related sources.
 - [CONTRIBUTING.md](CONTRIBUTING.md) describes the proposed PR workflow.
 
-## Place the supplied inputs
+
+## Step 1: More on placing the supplied inputs
+
+All 108 supplied files are covered by
+[manifests/inputs.yml](manifests/inputs.yml): one checksum for the complete voter
+dataset, plus individual hashes for the SBE components and R1 file. Full-size data remain local and are
+excluded from Git. A clone includes a small, runnable [Tyrrell County example](examples/tyrrell/README.md)
+with aggregate counts and public boundaries.
+The full build and equivalence to the legacy outputs remain to be validated.
+
 
 Open `NC-race-party-precinct.Rproj` and work from this directory. Obtain the
 following retained files from the data provider and copy them to these paths:
@@ -76,7 +84,7 @@ come from `ggredist::cities`. These steps require the relevant R packages and
 network access for uncached Census data. Their retrieved bytes are not currently
 locked by the input manifest.
 
-## Verify the inputs
+## Step 2: Verify the inputs
 
 From the repository root, run the verification stage alone:
 
@@ -101,7 +109,7 @@ to describe the same geography or records. Check the supplied snapshot and
 placement first. Replication does not require editing the manifest or removing
 pending entries: `pending_roots` is empty for the current supplied inputs.
 
-## Run the pipeline
+## Step 3: Run the pipeline
 
 After placing and verifying the inputs, run:
 
@@ -110,8 +118,11 @@ After placing and verifying the inputs, run:
 source("run.R")
 ```
 
-Or use `Rscript run.R` from a shell in the repository root. Each stage declares
-its required packages near the top. [config/pipeline.yml](config/pipeline.yml)
+Or use `Rscript run.R` from a shell in the repository root. Shared dependencies
+(`cli`, `fs`, `glue`, `purrr`, `readr`, `scales`, and `yaml`) are checked by
+[R/nc-utils.R](R/nc-utils.R); each stage lists its additional packages near the
+top. Manifest validation uses `checkmate`, ACS retrieval uses `easycensus`, and
+spatial matching uses `geomander`. [config/pipeline.yml](config/pipeline.yml)
 controls input roots, Census years, build order, and destination paths.
 
 | Directory | Contents and instructions |
@@ -131,7 +142,43 @@ university data are a frozen upstream point table. This builds from those
 snapshots; reconstructing their original ZIP/TSV inputs and university matching
 decisions remains separate provenance work, described in the input manifest.
 
-Public PRs should contain code, documentation, small reference mappings, and
-manifests. Raw data and generated datasets remain local. `.gitignore` prevents
+## Deliverables
+
+The overall pipeline publishes:
+
+- RDS: `release/nc_vtd_wide.rds` (precinct race-by-party counts, margins,
+  regions, and covariates) and `release/nc_vtd_geo.rds` (simplified SBE
+  geometry in the reference CRS).
+- GeoJSON: `release/nc_vtd_geo.geojson`, the same precinct geometry with
+  identifier columns only (`vtd`, `county_nam`, `fips`).
+- Codebook: `codebook.qmd`.
+- SHA-256 hashes of supplied inputs in [manifests/inputs.yml](manifests/inputs.yml).
+  [manifests/outputs.yml](manifests/outputs.yml) will hold release hashes after
+  a reviewed successful build.
+
+Cite the dataset and its NCSBE, Census, and other sources with
+[CITATION.cff](CITATION.cff).
+
+## Advanced: Focused regression checks
+
+With `testthat` installed, run these checks from the repository root:
+
+```r
+# Written by Codex
+testthat::test_dir("tests", stop_on_failure = TRUE)
+```
+
+[tests/test-pipeline.R](tests/test-pipeline.R) checks the directory-checksum
+format, altered inputs, manifest validation, ACS median fallbacks, and precinct
+total preservation using temporary files and small in-memory tables.
+[tests/test-tyrrell.R](tests/test-tyrrell.R) checks the real example's spatial
+assignments, counts, and missing covariates. Both run without supplied data or
+network access. `testthat` reports object differences using
+`waldo`; integer-count comparisons use zero tolerance. These focused checks do
+not replace validation of a full Census-backed build.
+
+Public PRs should contain code, documentation, small reference mappings,
+manifests, and the three explicitly allowed Tyrrell example inputs. Raw data
+and generated datasets remain local. `.gitignore` prevents
 ordinary accidental additions; it cannot stop `git add -f` or untrack files that
 were previously committed. See the planned PR check in [CONTRIBUTING.md](CONTRIBUTING.md).

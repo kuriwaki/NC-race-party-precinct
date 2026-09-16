@@ -12,7 +12,10 @@ and deliverables under `release/`. Only their READMEs are tracked. Follow
 [config/pipeline.yml](config/pipeline.yml) for paths and build order. Never
 force-add L2 records, NC voter records, shapefiles, extracts, or Census caches.
 Do not include individual voter examples, addresses, credentials, or raw-record
-logs in PRs. Use invented rows for examples and aggregate diagnostics.
+logs in PRs. The three [Tyrrell example inputs](examples/tyrrell/README.md) are
+explicit exceptions: aggregate counts and public CSV/GeoJSON data with only
+the fields needed by the pipeline. Other examples should use invented rows or
+aggregate diagnostics.
 
 Track manifests as YAML under `manifests/`, the codebook as `codebook.qmd`,
 citation and source attribution as `CITATION.cff`, and small reviewed mappings
@@ -28,7 +31,8 @@ another contributor's behalf.
 Planned CI will reject tracked data directories, prohibited raw/binary formats,
 and unexpectedly large files (initial proposal: 1 MiB per tracked file, with
 explicit reviewed exceptions). It will check the full tracked inventory,
-including files added with `git add -f`. This guard is not implemented yet.
+including files added with `git add -f`, and allow the three exact paths in
+[manifests/example-tyrrell.yml](manifests/example-tyrrell.yml). This guard is not implemented yet.
 
 ## Code and source updates
 
@@ -54,8 +58,15 @@ are documented in [data/raw/README.md](data/raw/README.md) and implemented in
 [R/nc-utils.R](R/nc-utils.R). [Stage 00](prepare/00_nc_download.R) verifies this
 manifest before [run.R](run.R) proceeds with the build.
 
-Eventually, public PR checks will run small invented-data examples, syntax and
-manifest checks, and data-exclusion checks. Full data validation will compare
-local outputs with the reference build using the same reviewed inputs and
-dependency versions. No completed end-to-end validation or test suite is claimed
-at this stage.
+Run `testthat::test_dir("tests", stop_on_failure = TRUE)` from
+the repository root for the [focused regression checks](tests/test-pipeline.R).
+They cover checksum integrity, malformed manifests, ACS fallbacks, and count
+preservation without source data or network access. The
+[Tyrrell regression check](tests/test-tyrrell.R) also covers the reviewed spatial
+assignments and missing covariates in the real county example. Use `expect_equal()` with
+zero tolerance for count tables and `waldo::compare()` when inspecting a
+before/after difference; preserve column types as well as values.
+
+Public CI and data-exclusion checks remain future work. Full data validation
+must compare local outputs with the reference build using the same reviewed
+inputs and dependency versions.
