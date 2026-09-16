@@ -1,0 +1,5 @@
+# Output hashes are written only after a reviewed successful build.
+schema_version: 1
+algorithm: sha256
+dataset_id: nc_race_party_precinct_outputs
+files: []

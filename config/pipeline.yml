@@ -1,0 +1,63 @@
+state: "NC"
+
+paths:
+  raw: "data/raw"
+  intermediate: "data/intermediate"
+  output: "release"
+  diagnostics: "data/diagnostics"
+
+manifests:
+  inputs: "manifests/inputs.yml"
+  outputs: "manifests/outputs.yml"
+
+snapshots:
+  voter_file: "2025-08-02"
+  sbe_precincts: "SBE_PRECINCTS_20250225"
+
+inputs:
+  voter_root: "ncvoter_2025-08-02"
+  sbe_root: "SBE_PRECINCTS_20250225"
+  r1_root: "r1_universities"
+  required_roots:
+    - "ncvoter_2025-08-02"
+    - "SBE_PRECINCTS_20250225"
+    - "r1_universities"
+
+run:
+  stages:
+    - "00"
+    - "01"
+    - "02a"
+    - "02b"
+    - "02"
+    - "03"
+    - "04"
+
+universities:
+  mode: "reviewed_points"
+  reviewed_points: "r1_universities/r1_coords.rds"
+  source_geometry: "r1_universities/us-colleges-and-universities@public"
+  r1_workbook: "r1_universities/wikipedia_R1.xlsx"
+  crosswalk: "references/r1-universities-crosswalk.yml"
+  source_id_column: "objectid"
+
+distances:
+  states:
+    - "NC"
+    - "SC"
+    - "TN"
+    - "VA"
+    - "GA"
+  min_city_population: 100000
+
+acs:
+  year: 2023
+
+tiger:
+  year: 2024
+
+geometry:
+  simplify_keep: 0.04
+
+outputs:
+  write_manifest: false

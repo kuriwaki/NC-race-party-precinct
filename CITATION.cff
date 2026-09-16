@@ -1,0 +1,76 @@
+cff-version: 1.2.0
+message: >
+  If you use this dataset or code, please cite it and the source data
+  listed under references.
+type: dataset
+title: "North Carolina precinct race, party, and geometry"
+abstract: >
+  Precinct-level North Carolina voter registration counts by race and party,
+  with ACS and geographic covariates and simplified State Board of Elections
+  precinct geometry. Person-level voter records are not redistributed; they
+  remain public data hosted by the North Carolina State Board of Elections.
+authors:
+  - family-names: Kuriwaki
+    given-names: Shiro
+    orcid: "https://orcid.org/0000-0002-5687-2647"
+    affiliation: "Yale University"
+    email: shiro.kuriwaki@yale.edu
+  - family-names: McCartan
+    given-names: Cory
+    affiliation: "Pennsylvania State University"
+repository-code: "https://github.com/kuriwaki/NC-race-party-precinct"
+keywords:
+  - North Carolina
+  - voter registration
+  - precincts
+  - race
+  - party
+  - ecological inference
+references:
+  - type: data
+    authors:
+      - name: "North Carolina State Board of Elections"
+    title: "Voter Registration Data"
+    url: "https://www.ncsbe.gov/results-data/voter-registration-data"
+    notes: >
+      Public voter registration records (G.S. 132-1; G.S. 163-82.10). This
+      project uses a statewide snapshot labeled 2025-08-02. NCSBE current
+      county files are a moving endpoint, not an archive of that date.
+  - type: data
+    authors:
+      - name: "North Carolina State Board of Elections"
+    title: "SBE Precinct Maps, SBE_PRECINCTS_20250225"
+    url: "https://dl.ncsbe.gov/?prefix=PrecinctMaps/"
+    date-released: 2025-02-25
+    notes: >
+      Official precinct shapefile used for identifiers and simplified
+      geometry. See also https://dl.ncsbe.gov/ReadMe_PUBLIC_DATA.txt.
+  - type: data
+    authors:
+      - name: "U.S. Census Bureau"
+    title: "American Community Survey 5-Year Estimates"
+    year: 2023
+    url: "https://www.census.gov/programs-surveys/acs"
+    notes: >
+      Block-group estimates retrieved through easycensus. Tables used by the
+      current pipeline include B01002, B01003, B15003, B17001, and B19013.
+      Confirm the ACS product year in the pipeline config when implementing.
+  - type: data
+    authors:
+      - name: "U.S. Census Bureau"
+    title: "TIGER/Line Shapefiles, Block Groups"
+    year: 2024
+    url: "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html"
+    notes: >
+      Full TIGER geometry for land area and precinct matching; cartographic
+      boundary files (cb = TRUE) for distance calculations. The two variants
+      are not interchangeable.
+  - type: software
+    authors:
+      - family-names: McCartan
+        given-names: Cory
+    title: ggredist
+    url: "https://github.com/alarm-redist/ggredist"
+    notes: >
+      City point locations with 2020 population greater than 100,000 in NC,
+      SC, TN, VA, and GA.

@@ -1,0 +1,5 @@
+# Placeholder for a future reviewed source-to-R1 crosswalk.
+# The current config uses a reviewed point file under data/raw/r1_universities.
+schema_version: 1
+# Each reviewed match should have source_id and r1_name.
+matches: []

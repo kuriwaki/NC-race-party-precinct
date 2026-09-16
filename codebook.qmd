@@ -1,0 +1,94 @@
+---
+title: "NC Race-Party-Precinct Data Codebook"
+format: html
+---
+
+<!-- Written by Codex -->
+
+# Published Files ----
+
+The pipeline writes three ignored deliverables under `release/`:
+
+- `nc_vtd_wide.rds`: one row per voter-file precinct key.
+- `nc_vtd_geo.rds`: simplified SBE precinct geometry in the reference State Plane CRS.
+- `nc_vtd_geo.geojson`: the same identifier-only geometry transformed to WGS84 longitude/latitude for GeoJSON.
+
+Input hashes live in `manifests/inputs.yml`. Output hashes live in
+`manifests/outputs.yml` after a reviewed successful build.
+
+# Wide Table ----
+
+Identifiers:
+
+- `county_name`: upper-case county name from the voter-file source.
+- `county`: five-character county FIPS code.
+- `nc_region_4`: project four-region county grouping: Mountain, Piedmont, Inner Coastal Plain, or Outer Coastal Plain.
+- `vtd`: five-character county FIPS plus the recoded precinct identifier.
+
+Race-party counts:
+
+- `total`: total registrants in the retained voter-file universe.
+- `white_`, `black_`, `hisp_`, `other_`: race margins.
+- `_dem`, `_ind`, `_rep`, `_lib`: party margins.
+- `white_dem`, `white_ind`, `white_rep`, `white_lib`: White registrants by party.
+- `black_dem`, `black_ind`, `black_rep`, `black_lib`: Black registrants by party.
+- `hisp_dem`, `hisp_ind`, `hisp_rep`, `hisp_lib`: Hispanic registrants by party.
+- `other_dem`, `other_ind`, `other_rep`, `other_lib`: Other-race registrants by party.
+
+Covariates:
+
+- `med_age`: population-weighted mean of block-group median age.
+- `med_inc`: population-weighted mean of logged block-group median household income.
+- `edu_coll`: share of adults age 25+ with a bachelor's degree.
+- `edu_hsless`: share of adults age 25+ with high school or less.
+- `edu_prof`: share of adults age 25+ with graduate or professional education.
+- `edu_somecoll`: share of adults age 25+ with some college or an associate's degree.
+- `pop_dens`: population-weighted mean block-group density, people per square mile.
+- `city_dist`: minimum distance in meters from the block-group geometry to a selected large city or R1 university point, then population-weighted to precinct.
+- `white_pov`: county-level White non-Hispanic poverty share.
+- `pop_total`: total block-group population assigned to the precinct.
+- `area_total`: total assigned block-group land area in square miles.
+
+# Voter Universe ----
+
+The voter-file stage retains records with `race_code != "U"`,
+`ethnic_code != "UN"`, and nonmissing `vtd_abbrv`. It does not add an active
+registration, turnout, or election-history filter.
+
+Hispanic ethnicity (`ethnic_code == "HL"`) takes precedence over race. White is
+`W`, Black is `B`, and Other is `A`, `I`, `M`, `O`, or `P`. Party codes map as
+DEM to `dem`, UNA to `ind`, REP to `rep`, and LIB to `lib`; every other party
+code falls into `ind` to preserve the source pipeline.
+
+Precinct keys begin as county FIPS plus `precinct_abbrv`. Gaston, Wake,
+Harnett, Pender, and Columbus use `vtd_abbrv` before county-specific recodes.
+Wake suffixes after the first dash are collapsed. The recode rules are in
+`R/nc-precinct-recodes.R`.
+
+# Geometry ----
+
+`nc_vtd_geo.rds` keeps `vtd`, `county_nam`, `fips`, and `geometry`.
+The RDS keeps the SBE source CRS observed in the legacy artifact: NAD83 / North
+Carolina (ftUS). `nc_vtd_geo.geojson` is transformed to WGS84 longitude/latitude.
+
+The geometry may have more rows than distinct `vtd` values. The reference output
+had 2,655 geometry rows and 2,465 distinct `vtd` keys. This pipeline preserves
+the feature rows at this stage rather than dissolving or otherwise reconciling
+that ambiguity.
+
+# Source Vintages ----
+
+- NC voter file: snapshot labeled `2025-08-02`, locked locally by SHA-256 before use.
+- SBE precinct maps: `SBE_PRECINCTS_20250225`, locked by complete shapefile components.
+- ACS: 2023 estimates retrieved through `easycensus`.
+- TIGER block groups: 2024 full geometry for area and matching; 2024 cartographic geometry for distances.
+- Cities: `ggredist::cities`, 2020 population greater than 100,000 in NC, SC, TN, VA, and GA.
+- R1 universities: reviewed local point table under `data/raw/r1_universities`.
+
+# Build Checks ----
+
+Stage 00 verifies the declared source roots and exact SHA-256 hashes before the
+pipeline proceeds. Stage 01 checks that precinct recoding preserves
+county/race/party totals. Stage 03 records spatial matching coverage in
+`data/diagnostics/`. Stage 04 checks race and party margins, geometry key
+coverage, and the fixed output column order.
