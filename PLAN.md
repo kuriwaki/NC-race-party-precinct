@@ -109,7 +109,6 @@ prepare/03_nc-geomatch.R
 prepare/04_nc-wide_combine.R
 run.R                              # explicit stage order, clean-session build
 renv.lock                          # create once dependencies are settled
-examples/                          # current draft code, invented data only
 data/raw/                          # ignored, immutable acquired inputs
 data/intermediate/                 # ignored, rebuildable stage outputs
 release/                           # ignored: rds and geojson deliverables

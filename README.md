@@ -36,18 +36,11 @@ repository, without that checkout, saved R workspace objects, or personal paths.
   the original `prepare/` pipeline.
 - [codebook.qmd](codebook.qmd) documents the output schema, voter universe,
   covariates, source vintages, and geometry ambiguity.
-- [examples/check-inputs.R](examples/check-inputs.R) demonstrates strict SHA-256
-  verification, including missing files and unexpected shapefile components.
-- [manifests/sbe-20250225.example.yml](manifests/sbe-20250225.example.yml)
-  contains measured hashes of the seven locally available SBE components.
-  This is a real but **partial** input manifest; it does not certify the voter
-  snapshot, ACS, university coordinates, L2, or the full build.
+- [R/check-inputs.R](R/check-inputs.R) implements strict SHA-256 verification,
+  including missing files and unexpected shapefile components.
 - [manifests/inputs.yml](manifests/inputs.yml) is the build manifest. It
   currently locks the seven SBE shapefile components and marks the voter and R1
   roots as pending.
-- [examples/combine-wide.R](examples/combine-wide.R) demonstrates the final
-  widening and joins using a small, invented dataset; it does not read voters
-  or generate the deliverables.
 - [CITATION.cff](CITATION.cff) is the preferred citation and lists NCSBE,
   Census ACS/TIGER, and related sources.
 - [CONTRIBUTING.md](CONTRIBUTING.md) describes the proposed PR workflow.
@@ -67,21 +60,11 @@ By default, stage 04 writes the output files but does not rewrite
 `manifests/outputs.yml`; set `outputs.write_manifest: true` in
 `config/pipeline.yml` after reviewing a successful build.
 
-## Try the examples
+## Verify Inputs
 
-The examples use `cli`, `digest`, `dplyr`, `glue`, `purrr`, `scales`, `tibble`,
-`tidyr`, and `yaml`; they do not install packages or download data.
-
-Run `Rscript examples/combine-wide.R` for the invented-data example.
-
-To try file verification, place the original seven SBE files under
-`data/raw/SBE_PRECINCTS_20250225/`, then run:
-
-```r
-# Written by Codex
-source("examples/check-inputs.R")
-verify_inputs("manifests/sbe-20250225.example.yml")
-```
+Stage 00 verifies `manifests/inputs.yml` before the pipeline builds. At the
+moment the full manifest still has pending voter-file and R1 university roots,
+so it stops until those entries are filled in with reviewed sizes and hashes.
 
 The verifier stops on missing files, unexpected files, size mismatches, or hash
 mismatches. It never changes the expected hashes. A different download can have
