@@ -14,11 +14,9 @@ prepare_precinct_geometry <- function(precinct_geo_raw) {
       relationship = "many-to-one"
     ) |>
     dplyr::mutate(
-      prec_id = dplyr::coalesce(.data$prec_id_recode, .data$prec_id),
-      prec_id_wake = dplyr::if_else(.data$county_nam == "WAKE", stringr::word(.data$prec_id, 1L, sep = "-"), NA_character_),
-      prec_id = dplyr::coalesce(.data$prec_id_wake, .data$prec_id)
+      prec_id = dplyr::coalesce(.data$prec_id_recode, .data$prec_id)
     ) |>
-    dplyr::select(-dplyr::any_of(c("prec_id_recode", "prec_id_wake"))) |>
+    dplyr::select(-dplyr::any_of("prec_id_recode")) |>
     dplyr::left_join(nc_county_geometry_reference(), by = "county_nam", relationship = "many-to-one") |>
     dplyr::mutate(vtd = stringr::str_c(.data$fips, .data$prec_id), .after = "enr_desc")
 }

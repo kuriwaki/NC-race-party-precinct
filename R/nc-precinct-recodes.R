@@ -94,11 +94,16 @@ apply_nc_precinct_recodes <- function(voter_counts) {
       vtd = dplyr::if_else(vtd == "371790044", "37179044", vtd),
       vtd = dplyr::if_else(vtd == "371790045", "37179045", vtd),
       vtd = dplyr::if_else(vtd == "37175CC.1", "37175CC", vtd),
-      vtd = dplyr::if_else(vtd == "37175RE.1", "37175RE", vtd),
-      vtd_wake = dplyr::if_else(county == "37183", stringr::word(vtd, 1, sep = "-"), NA_character_),
-      vtd = dplyr::coalesce(vtd_wake, vtd)
-    )
-
+      vtd = dplyr::if_else(vtd == "37175RE.1", "37175RE", vtd)
+    ) |>
+    dplyr::left_join(
+      wake_precinct_crosswalk() |>
+        dplyr::select(county, vtd2 = vtd_abbrv, vtd_wake = corrected_vtd),
+      by = c("county", "vtd2"),
+      relationship = "many-to-one"
+    ) |>
+    dplyr::mutate(vtd = dplyr::coalesce(vtd_wake, vtd))
+  
   recoded |>
     dplyr::select(-new_vtd, -vtd_wake)
 }

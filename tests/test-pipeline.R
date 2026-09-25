@@ -7,6 +7,7 @@ source("../R/nc-utils.R")
 source("../R/check-inputs.R")
 source("../R/nc-acs.R")
 source("../R/nc-precinct-recodes.R")
+source("../R/nc-wake-crosswalk.R")
 require_packages(c("checkmate", "digest", "dplyr", "easycensus", "stringr", "tibble"))
 testthat::local_edition(3)
 
@@ -86,6 +87,14 @@ testthat::test_that("precinct recoding preserves county totals", {
   counts <- tibble::tibble(county_name = "WAKE", county = "37183", vtd = c("37183A", "37183B"),
                            vtd2 = c("01-01", "01-02"), race = "white", party = "dem", n = c(2L, 3L))
   recoded <- aggregate_recoded_voters(counts)
-  testthat::expect_equal(recoded$n, 5L, tolerance = 0)
+  testthat::expect_identical(recoded$vtd, c("3718301-01", "3718301-02"))
+  testthat::expect_equal(recoded$n, c(2L, 3L), tolerance = 0)
   testthat::expect_equal(county_voter_totals(recoded), county_voter_totals(counts), tolerance = 0)
+})
+
+testthat::test_that("Wake crosswalk overrides stale codes only within Wake", {
+  counts <- tibble::tibble(county_name = c("WAKE", "ALAMANCE"), county = c("37183", "37001"),
+                           vtd = c("37183X", "37001X"), vtd2 = "20-02", race = "white", party = "dem", n = 1L)
+  recoded <- apply_nc_precinct_recodes(counts)
+  testthat::expect_identical(recoded$vtd, c("3718320-14", "37001X"))
 })

@@ -7,6 +7,7 @@
 source("R/nc-utils.R")
 source("R/check-inputs.R")
 source("R/nc-precinct-recodes.R")
+source("R/nc-wake-crosswalk.R")
 
 require_packages(c("arrow", "checkmate", "dplyr", "stringr"))
 config <- read_pipeline_config()
