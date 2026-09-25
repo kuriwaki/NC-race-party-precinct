@@ -69,8 +69,7 @@ code falls into `ind` to preserve the source pipeline.
 
 Precinct keys begin as county FIPS plus `precinct_abbrv`. Gaston, Wake,
 Harnett, Pender, and Columbus use `vtd_abbrv` before county-specific recodes.
-Wake suffixes after the first dash are collapsed. The recode rules are in
-`R/nc-precinct-recodes.R`.
+Wake codes are mapped to February 2025 SBE precincts by wake_precinct_crosswalk() in R/nc-wake-crosswalk.R, derived from L2 residence geocodes; 14 codes absent from that vintage go to the precinct holding most of their geocoded voters.
 
 # Geometry ----
 

@@ -9,6 +9,7 @@ need to supply any files in this directory.
 | `stage01_precinct_recode_keys.rds` | Distinct county and precinct identifiers used to inspect voter-file recoding | [01: voter counts](../../prepare/01_nc-vf-fmt.R) |
 | `stage01_unknown_codes.rds` | County, race, or party codes that cause stage 01 to stop; written only if encountered | [01: voter counts](../../prepare/01_nc-vf-fmt.R) |
 | `stage03_match_coverage.rds` | Counts of block groups, SBE features, distinct precinct keys, and matched precinct keys | [03: spatial match](../../prepare/03_nc-geomatch.R) |
+data/diagnostics/README.md
 
 These are generated reports, not supplied inputs or release datasets, so they
 are outside the [input manifest](../../manifests/inputs.yml) and
