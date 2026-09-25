@@ -84,6 +84,9 @@
 !/release/tyrrell/nc_vtd_geo.rds
 !/release/tyrrell/nc_vtd_geo.geojson
 
+# Reviewed Wake example: aggregate counts on public SBE boundaries.
+!/examples/wake/wake-precincts.geojson
+
 # Credentials and machine-specific configuration.
 .Renviron
 .Renviron.*
@@ -98,3 +101,4 @@ config/local.yaml
 /renv/staging/
 *.Rcheck/
 *~
+.positai
